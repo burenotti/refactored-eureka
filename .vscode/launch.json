@@ -1,0 +1,11 @@
+{
+	"configurations": [
+		{
+			"name": "Python: Run uvicorn",
+			"type": "python",
+			"request": "launch",
+			"module": "blog",
+			"cwd": "${workspaceFolder}"
+		}
+	]
+}
