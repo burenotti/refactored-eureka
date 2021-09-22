@@ -19,3 +19,9 @@ class Settings(BaseSettings):
 	JWT_ALGORITHM = "HS_256"
 	JWT_SECRET: str
 	JWT_TOKEN_LIFETIME: int = 3600 # One hour
+
+
+settings = Settings(
+	_env_file='.env',
+	_env_file_encoding='utf-8',
+)
