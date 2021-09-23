@@ -8,3 +8,6 @@ from .users import *
 
 To give an ability to alembic to process your schemas.
 '''
+
+
+from .users import *
