@@ -1,6 +1,9 @@
 import sqlalchemy as sa
-from database.db import Base
+from blog.database.db import Base
 
+__all__ = [
+	"User"
+]
 
 class User(Base):
 
