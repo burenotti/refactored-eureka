@@ -1,6 +1,7 @@
 from blog.database.db import get_async_session
 import datetime
 import sqlalchemy
+from sqlalchemy.exc import IntegrityError
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
@@ -9,15 +10,35 @@ from passlib.hash import bcrypt
 from blog.auth.models import Token
 from blog.settings import settings
 from blog.database import AsyncSession
-from .exceptions import HTTP_401_Exception
-from .models import UserCreate, Token
+from .exceptions import HTTP_401_Exception, HTTP_422_Exception
+from .models import UserCreate, Token, UserOut
 from blog.database import schemas
 
 
 oauth2_scheme = OAuth2PasswordBearer('/auth/sign-in')
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
-	return AuthService.validate_token(token)
+async def get_current_user(
+	token: str = Depends(oauth2_scheme),
+	session: AsyncSession = Depends(get_async_session)
+) -> str:
+
+	username = AuthService.validate_token(token)
+
+	async with session.begin():
+
+		query = (
+			sqlalchemy
+			.select(schemas.User)
+			.where(schemas.User.username == username)
+		)
+		user = (await session.execute(query)).first()
+
+		if user:
+			user = user[0]
+		else:
+			raise HTTP_401_Exception("Current user does not exist")
+
+		return UserOut.from_orm(user)
 
 
 
@@ -32,8 +53,8 @@ class AuthService:
 		return bcrypt.hash(password)
 
 	@classmethod
-	def create_token(username: str) -> Token:
-		now = datetime.now()
+	def create_token(cls, username: str) -> Token:
+		now = datetime.datetime.utcnow()
 		token_lifetime = datetime.timedelta(seconds=settings.JWT_TOKEN_LIFETIME)
 		payload = {
 			'iat': now,
@@ -64,8 +85,8 @@ class AuthService:
 				settings.JWT_SECRET,
 				algorithms=[settings.JWT_ALGORITHM],
 			)
-		except JWTError:
-			raise exception from None
+		except JWTError as e:
+			raise HTTP_401_Exception(str(e)) from None
 
 		username = payload.get('sub')
 
@@ -93,7 +114,14 @@ class AuthService:
 
 			self.session.add(user)
 
-			await self.session.commit()
+			try:
+
+				await self.session.commit()
+
+			except IntegrityError as error:
+
+				raise HTTP_422_Exception("Username is alredy exists")
+
 
 		return self.create_token(user_data.username)
 
@@ -101,18 +129,19 @@ class AuthService:
 		exception = HTTP_401_Exception("Username or password are incorrect")
 
 		async with self.session.begin():
-			user = await (
-				self.session
+			query = (
+				sqlalchemy
 				.select(schemas.User)
-				.query(schemas.User.username == username)
-				.first()
-				.scalars()
+				.where(schemas.User.username == username)
 			)
+			user = (await self.session.execute(query)).first()
 
-		if not user:
+		if user:
+			user = user[0]
+		else:
 			raise exception
 
-		if not self.verify_password(password, username.password_hash):
+		if not self.verify_password(password, user.password_hash):
 			raise exception
 
 		return self.create_token(username)
