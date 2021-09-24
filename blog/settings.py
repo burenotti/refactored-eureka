@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
 	# JWT
 
-	JWT_ALGORITHM = "HS_256"
+	JWT_ALGORITHM = "HS256"
 	JWT_SECRET: str
 	JWT_TOKEN_LIFETIME: int = 3600 # One hour
 
