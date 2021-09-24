@@ -24,6 +24,6 @@ async def sign_up(
 	return await service.create_user(user)
 
 
-@router.get('/user')
-async def get_user(username: OAuth2PasswordBearer = Depends(get_current_user)):
-	return {"username": username}
+@router.get('/user', response_model=UserOut)
+async def get_user(user: OAuth2PasswordBearer = Depends(get_current_user)):
+	return user
