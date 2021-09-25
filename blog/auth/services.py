@@ -20,7 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer('/auth/sign-in')
 async def get_current_user(
 	token: str = Depends(oauth2_scheme),
 	session: AsyncSession = Depends(get_async_session)
-) -> str:
+) -> UserOut:
 
 	username = AuthService.validate_token(token)
 
