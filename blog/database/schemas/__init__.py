@@ -11,3 +11,4 @@ To give an ability to alembic to process your schemas.
 
 
 from .users import *
+from .posts import *
