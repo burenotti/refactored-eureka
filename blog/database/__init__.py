@@ -1,2 +1,2 @@
 import blog.database.schemas as schemas
-from .db import Base, async_engine, AsyncSession, async_session
+from .db import Base, async_engine, AsyncSession, get_async_session
